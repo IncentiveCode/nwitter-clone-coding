@@ -5,9 +5,9 @@ import { useState } from "react";
 import { deleteDoc, doc } from "firebase/firestore";
 import UpdateTweetForm from "./update-tweet-form";
 
-const Wrapper = styled.div<{ isUpdating: boolean }>`
+const Wrapper = styled.div<{ isupdating: boolean }>`
 	display: grid;
-	grid-template-columns: ${({isUpdating}) => (isUpdating ? "1fr" : "3fr 1fr")};
+	grid-template-columns: ${({isupdating}) => (isupdating ? "1fr" : "3fr 1fr")};
 	padding: 20px;
 	border: 1px solid rgba(255, 255, 255, 0.5);
 	border-radius: 15px;
@@ -17,6 +17,12 @@ const Column = styled.div `
     display: flex;
     flex-direction: column;
     justify-content: space-between; /* 상단-하단 요소 간에 공간 배분 */
+`;
+
+const PhotoArea = styled.div `
+    display: flex;
+	flex-direction: column;
+    align-items: end;
 `;
 
 const Photo = styled.img `
@@ -63,7 +69,7 @@ const ButtonBox = styled.div`
     margin-top: 10px;
 `;
 
-export default function Tweet({username, attachedImage, tweet, userId, id }: ITweet) {
+export default function Tweet({username, photo, tweet, userId, id }: ITweet) {
 	const user = auth.currentUser;
 	const [isUpdate, setUpdate] = useState(false);
 
@@ -83,11 +89,11 @@ export default function Tweet({username, attachedImage, tweet, userId, id }: ITw
     }
 
 	return (
-		<Wrapper isUpdating={isUpdate}>
+		<Wrapper isupdating={isUpdate}>
 			<Column>
 				<Username>{username}</Username>
 				<Payload>{tweet}</Payload>
-				{isUpdate && <UpdateTweetForm id={id} setUpdate={setUpdate} afterFile={attachedImage} afterTweet={tweet}/>}
+				{isUpdate && <UpdateTweetForm id={id} setUpdate={setUpdate} currentPhoto={photo} currentTweet={tweet}/>}
                 {user?.uid === userId && (
                     <ButtonBox>
                         <DeleteButton onClick={onDelete}>Delete</DeleteButton>
@@ -95,13 +101,13 @@ export default function Tweet({username, attachedImage, tweet, userId, id }: ITw
                     </ButtonBox>
                 )}
 			</Column>
-			<Column>
+			<PhotoArea>
 				{
-					attachedImage 
-						? <Photo src={attachedImage} />
+					photo 
+						? <Photo src={photo} />
 						: null
 				}
-			</Column>
+			</PhotoArea>
 		</Wrapper>
 	)
 }

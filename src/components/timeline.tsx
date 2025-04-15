@@ -5,7 +5,7 @@ import styled from "styled-components";
 import Tweet from "./tweet";
 
 export interface ITweet {
-	attachedImage?: string;
+	photo?: string;
 	tweet: string;
 	userId: string;
 	username: string;
@@ -47,11 +47,11 @@ export default function Timeline() {
 			*/
 
 			// snapshot
-			unsubscribe = await onSnapshot(q, (snapshot) => {
+			unsubscribe = onSnapshot(q, (snapshot) => {
 				const tweets = snapshot.docs.map((doc) => {
-					const { tweet, createdAt, userId, username, attachedImage } = doc.data();
+					const { tweet, createdAt, userId, username, photo } = doc.data();
 					return {
-						tweet, createdAt, userId, username, attachedImage,
+						tweet, createdAt, userId, username, photo,
 						id: doc.id
 					}
 				});

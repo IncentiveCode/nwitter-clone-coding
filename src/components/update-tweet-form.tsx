@@ -1,19 +1,21 @@
 import {useEffect, useLayoutEffect, useState} from "react";
 import {doc,updateDoc} from "firebase/firestore";
-import {auth, db} from "../firebase.ts";
-import { AttachFileButton, AttachFileInput, Form, SubmitButton, TextArea } from "./tweet-form-components.ts";
+import {auth, db, storage} from "../firebase.ts";
+import { AttachFileButton, AttachFileInput, Form, imageMaxMB, imageMaxSize, SubmitButton, TextArea } from "./tweet-form-components.ts";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 interface UpdateTweetFormProps {
     id: string;
     setUpdate: (value: boolean) => void;
-    afterTweet: string;
-    afterFile?: string;
+    currentTweet: string;
+    currentPhoto?: string;
 }
 
-export default function UpdateTweetForm({id, setUpdate, afterFile, afterTweet} : UpdateTweetFormProps) {
+export default function UpdateTweetForm({id, setUpdate, currentPhoto, currentTweet} : UpdateTweetFormProps) {
     const [isLoading, setLoading] = useState(false);
     const [tweet, setTweet] = useState("");
-    const [file, setFile] = useState<string | null>(null);
+	const [file, setFile] = useState<File|null>(null);
+    const [photoState, setPhotoState] = useState(false);
     const [changeFile, setChangeFile] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -22,14 +24,15 @@ export default function UpdateTweetForm({id, setUpdate, afterFile, afterTweet} :
     };
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { files } = e.target;
-		if (files && files.length === 1) {
-			const reader = new FileReader();
-			reader.onloadend = () => {
-				// setFile(files[0]);
-				setFile(reader.result as string);
+
+        if (files && files.length === 1) {
+			if (files[0].size > imageMaxSize) {
+				alert(`Please use images less than ${imageMaxMB}MB.`);
+			} else {
+				setFile(files[0]);
+                setChangeFile(true);
 			}
-			reader.readAsDataURL(files[0]);
-		}
+        }
     };
     const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -39,11 +42,20 @@ export default function UpdateTweetForm({id, setUpdate, afterFile, afterTweet} :
 
         try {
             setLoading(true);
+            let url = "";
+
+            if (file) {
+				const locationRef = ref(storage, `tweets/${user.uid}/${id}`);
+				const result = await uploadBytes(locationRef, file);
+				url = await getDownloadURL(result.ref);
+            }
+
             await updateDoc(doc(db, "tweets", id), {
                 tweet,
-				attachedImage: file,
-                updateDate: Date.now()
+                updateDate: Date.now(),
+                photo: url
             })
+
         } catch (e) {
             console.log(e);
         } finally {
@@ -53,20 +65,21 @@ export default function UpdateTweetForm({id, setUpdate, afterFile, afterTweet} :
     };
 
     useLayoutEffect(() => {
-        if(!afterFile) return;
-        setFile(afterFile);
-        setTweet(afterTweet);
-    }, []);
+        setTweet(currentTweet);
+
+        if(!currentPhoto) return;
+        setPhotoState(true);
+    }, [currentTweet, currentPhoto]);
 
     useEffect(() => {
-        if(changeFile && file) {
+        if(changeFile && photoState) {
             setMessage("Update Photo ✅");
-        } else if(!changeFile && file) {
+        } else if(!changeFile && photoState) {
             setMessage("Added Photo ✅   Do you want Change?")
-        } else if(!changeFile && !file) {
+        } else if(!changeFile && !photoState) {
             setMessage("Add Photo");
         }
-    },[changeFile, file]);
+    },[changeFile, photoState]);
 
     return (
         <Form onSubmit={onSubmit}>

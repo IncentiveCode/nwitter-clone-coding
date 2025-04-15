@@ -53,3 +53,6 @@ export const SubmitButton = styled.input `
 		opacity: 0.8;
 	}
 `;
+
+export const imageMaxSize = 3 * 1024 * 1024;
+export const imageMaxMB = 3;
